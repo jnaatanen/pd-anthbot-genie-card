@@ -8,6 +8,8 @@ glows the zone currently being mowed, shows honest coverage
 (`mowing_area / map_area`), battery, RTK state and session stats, and exposes
 Pause / Resume / Dock / Stop / per-zone-start controls.
 
+![Anthbot Genie Card — dark "glass" card-mod theme](docs/preview.png)
+
 > **Requires the [`anthbot_genie_ha`](https://github.com/vincentjanv/anthbot_genie_ha)
 > integration by [@vincentjanv](https://github.com/vincentjanv).** Install and
 > configure that first. This card only *visualizes* the entities that integration
