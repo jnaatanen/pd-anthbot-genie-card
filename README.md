@@ -61,6 +61,7 @@ show_dock: true
 invert_y: false                     # set true if the yard renders upside-down
 preferred_services: lawn_mower      # lawn_mower | anthbot_genie
 meters_per_unit: 0.001              # zone vertices are local mm → m (for area labels)
+refresh_interval: 0                 # seconds; >0 = card asks HA to poll more often
 error_labels:                       # optional code → label map for the error state
   "12": Blade jammed
 entities:                           # optional explicit overrides (rarely needed)
@@ -82,6 +83,7 @@ entities:                           # optional explicit overrides (rarely needed
 | `invert_y` | `false` | Flip the Y axis if the map is upside-down. |
 | `preferred_services` | `lawn_mower` | Use the `lawn_mower` platform services (Pause/Resume/Mow/Dock) where they exist, falling back to `anthbot_genie.*` for Stop and zone starts. |
 | `meters_per_unit` | `0.001` | Scale factor from zone vertex units to metres, used for the computed per-zone area labels. The Genie reports millimetres. |
+| `refresh_interval` | `0` | Seconds. When > 0, the card calls `homeassistant.update_entity` on this interval to pull fresher data than the integration's own poll (min 5 s; same cloud cost as lowering the integration's `scan_interval`). |
 | `error_labels` | `{}` | Map an `error_code` value to a human label for the error state. |
 | `entities` | `{}` | Explicit entity-id overrides, keyed by logical name (`battery_level`, `map_area`, `rtk_state`, `zones`, `charging`, `connection`, `position`, …). |
 
@@ -146,7 +148,8 @@ card_mod:
 ```
 
 Tip: raise the two background `rgba(...)` alpha values for a more opaque panel,
-or lower them for a glassier look over your dashboard background.
+or lower them for a glassier look over your dashboard background. The coverage
+trail colour is `--ag-trail` if you want to recolour the breadcrumb.
 
 ## Reserved slots (light up when the integration exposes them)
 
@@ -158,6 +161,7 @@ activate:
 | `sensor.<mower>_position` with `x`, `y` attrs | Live mower dot inside the active zone |
 | …plus `heading` (deg, 0=N) | Heading arrow on the dot |
 | …plus `rtk_accuracy_cm` | Accuracy circle around the dot |
+| `sensor.<mower>_coverage_trail` with `points` | Breadcrumb polyline of the mowed path this session |
 | `lawn_mower` attrs `dock_x`, `dock_y` | Real-coordinate dock marker |
 
 Until then the card shows `RTK <state> · live position not exposed`.

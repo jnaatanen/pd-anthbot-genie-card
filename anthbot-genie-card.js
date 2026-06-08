@@ -24,7 +24,7 @@
  *     `area` attribute).
  */
 
-const CARD_VERSION = '0.3.2';
+const CARD_VERSION = '0.4.0';
 
 // SPEC literal-id fallbacks (used when serial-scoped resolution finds nothing,
 // e.g. the §11 acceptance tests that mock `sensor.anthbot_genie_*`).
@@ -42,7 +42,8 @@ const FALLBACK = {
   rtk_state: 'sensor.anthbot_genie_rtk_state',
   error_code: 'sensor.anthbot_genie_error_code',
   zones: 'sensor.anthbot_genie_zones',
-  position: 'sensor.anthbot_genie_position', // aspirational
+  position: 'sensor.anthbot_genie_position',
+  coverage_trail: 'sensor.anthbot_genie_coverage_trail',
 };
 
 // Domain per logical key, for fallback/zone discovery.
@@ -50,7 +51,7 @@ const KEY_DOMAIN = {
   battery_level: 'sensor', mower_status: 'sensor', mowing_time: 'sensor',
   mowing_area: 'sensor', map_area: 'sensor', mowing_area_total: 'sensor',
   cutting_height: 'sensor', rtk_state: 'sensor', error_code: 'sensor',
-  zones: 'sensor', position: 'sensor',
+  zones: 'sensor', position: 'sensor', coverage_trail: 'sensor',
   charging: 'binary_sensor', connection: 'binary_sensor',
 };
 
@@ -61,7 +62,7 @@ const KEY_SLUG = {
   mowing_time: 'mowing_time_session', mowing_area: 'mowing_area_session',
   map_area: 'map_area', mowing_area_total: 'mowing_area_total',
   cutting_height: 'cutting_height', rtk_state: 'rtk_state',
-  error_code: 'error_code', zones: 'zones',
+  error_code: 'error_code', zones: 'zones', coverage_trail: 'coverage_trail',
   charging: 'charging', connection: 'connection',
 };
 
@@ -267,6 +268,8 @@ class AnthbotGenieCard extends HTMLElement {
     this._renderSignature = null; // skip re-render (and animation thrash) when nothing changed
     this._hist = null;            // { token, samples:[{t,batt,area}] } for estimates
     this._root = null;            // persistent content container (scaffold built once)
+    this._refreshTimer = null;    // optional card-driven refresh (refresh_interval)
+    this._connected = false;
     this.attachShadow({ mode: 'open' });
   }
 
@@ -281,12 +284,35 @@ class AnthbotGenieCard extends HTMLElement {
       meters_per_unit: 0.001,  // zone vertices are local mm → m for area (§ computed area)
       entities: {},            // optional explicit id overrides, keyed by logical name
       error_labels: {},        // optional error_code → human label map
+      refresh_interval: 0,     // seconds; >0 drives homeassistant.update_entity for fresher data
       ...config,
     };
     this._proj = null;
     this._zoneSignature = null;
     this._renderSignature = null;
     this._render();
+    if (this._connected) this._startRefresh();
+  }
+
+  connectedCallback() { this._connected = true; this._startRefresh(); }
+  disconnectedCallback() { this._connected = false; this._stopRefresh(); }
+
+  // Optional card-driven refresh: ask HA to pull fresh data more often than the
+  // integration's own poll. Same cloud cost as lowering its scan_interval.
+  _startRefresh() {
+    this._stopRefresh();
+    const s = Number(this._config && this._config.refresh_interval);
+    if (!s || !isFinite(s) || s <= 0) return;
+    const ms = Math.max(5, s) * 1000;
+    this._refreshTimer = setInterval(() => {
+      if (this._hass && this._config) {
+        this._hass.callService('homeassistant', 'update_entity', { entity_id: this._config.entity });
+      }
+    }, ms);
+  }
+
+  _stopRefresh() {
+    if (this._refreshTimer) { clearInterval(this._refreshTimer); this._refreshTimer = null; }
   }
 
   set hass(hass) {
@@ -343,6 +369,14 @@ class AnthbotGenieCard extends HTMLElement {
     if (!p) return null;
     const a = p.attributes || {};
     return `${a.x},${a.y},${a.heading},${a.rtk_accuracy_cm},${p.last_updated}`;
+  }
+
+  // Signature fragment for the coverage trail so it re-renders as it grows.
+  _trailSig() {
+    const e = this._state('coverage_trail');
+    if (!e) return null;
+    const pts = e.attributes && e.attributes.points;
+    return `${Array.isArray(pts) ? pts.length : 0}:${e.last_updated}`;
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -531,7 +565,7 @@ class AnthbotGenieCard extends HTMLElement {
       active: [...active], cov, batt: this._stateNum('battery_level'),
       rtk: this._stateStr('rtk_state'), err: this._errorText(),
       mt: this._stateStr('mowing_time'), ch: this._stateStr('cutting_height'),
-      tot: this._stateStr('mowing_area_total'), pos: this._positionSig(),
+      tot: this._stateStr('mowing_area_total'), pos: this._positionSig(), trail: this._trailSig(),
       lc: mower ? mower.last_changed : null, est: est == null ? null : Math.round(est),
     });
     if (sig === this._renderSignature) return;
@@ -615,6 +649,7 @@ class AnthbotGenieCard extends HTMLElement {
       <div class="map ${variant}">
         <svg viewBox="${viewBox}" preserveAspectRatio="xMidYMid slice">
           ${polys}
+          ${this._renderCoverageTrail(proj)}
           ${labels}
           ${this._renderLivePosition(proj, hasPos)}
           ${this._config.show_dock ? this._renderDockMarker(proj) : ''}
@@ -634,6 +669,24 @@ class AnthbotGenieCard extends HTMLElement {
         <div class="pos-state">${icon('crosshair')}<span>${posText}</span></div>
       </div>
     `;
+  }
+
+  // Coverage breadcrumb: the path the mower has mowed this session
+  // (sensor.<mower>_coverage_trail, attribute `points` = [[x,y],...] in zone units).
+  _renderCoverageTrail(proj) {
+    if (!proj) return '';
+    const e = this._state('coverage_trail');
+    const pts = e && e.attributes && e.attributes.points;
+    if (!Array.isArray(pts) || pts.length < 2) return '';
+    const coords = pts.map((p) => {
+      const x = asNum(Array.isArray(p) ? p[0] : p && p.x);
+      const y = asNum(Array.isArray(p) ? p[1] : p && p.y);
+      if (x == null || y == null) return null;
+      const [vx, vy] = project([x, y], proj);
+      return `${vx.toFixed(1)},${vy.toFixed(1)}`;
+    }).filter(Boolean).join(' ');
+    if (!coords) return '';
+    return `<polyline class="coverage-trail" points="${coords}" />`;
   }
 
   _renderLivePosition(proj, hasPos) {
@@ -822,6 +875,7 @@ class AnthbotGenieCard extends HTMLElement {
           --ag-zone-active-fill: oklch(73% 0.13 150);
           --ag-zone-active-stroke: oklch(45% 0.13 150);
           --ag-zone-label-active: oklch(32% 0.09 150);
+          --ag-trail: oklch(40% 0.12 150);
           --ag-mono: var(--ha-font-family-code, ui-monospace, 'SF Mono', Menlo, monospace);
           --ag-body: var(--ha-font-family-body, var(--mdc-typography-font-family, system-ui, sans-serif));
         }
@@ -843,6 +897,7 @@ class AnthbotGenieCard extends HTMLElement {
         .zone-poly.z3 { fill: var(--ag-z3); } .zone-poly.z4 { fill: var(--ag-z4); }
         .zone-poly.active { fill: var(--ag-zone-active-fill); stroke: var(--ag-zone-active-stroke); stroke-width: 1.5; stroke-dasharray: 6 4; animation: dashpulse 4s linear infinite; }
         @keyframes dashpulse { to { stroke-dashoffset: -40; } }
+        .coverage-trail { fill: none; stroke: var(--ag-trail); stroke-width: 2; opacity: 0.6; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 
         .zone-label { font: 500 10px/1 var(--ag-mono); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ag-zone-label-active); pointer-events: none; }
         .zone-label.muted { fill: var(--ag-muted); }
