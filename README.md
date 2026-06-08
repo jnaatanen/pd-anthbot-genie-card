@@ -105,17 +105,41 @@ mower that carries a `vertexs`/`points` array.
 
 The card reads Home Assistant theme variables first (so it follows light/dark
 themes automatically) and exposes its own `--ag-*` tokens as overridable hooks.
-It is compatible with [card-mod](https://github.com/thomasloven/lovelace-card-mod)
-for **variable-level** theming, which is the reliable path since CSS custom
-properties inherit across the shadow boundary:
+It works well with [card-mod](https://github.com/thomasloven/lovelace-card-mod).
+
+The example below produces a dark "glass" look with a green accent: a dark body
+with light text, the map kept light with dark/readable overlays, and a clearly
+highlighted active zone.
 
 ```yaml
 type: custom:anthbot-genie-card
 entity: lawn_mower.<your_mower>
+variant: expanded
 card_mod:
   style: |
-    ha-card { --ag-accent: #7c3aed; }
+    ha-card {
+      background: linear-gradient(160deg, rgba(19,36,28,0.93), rgba(12,22,17,0.95));
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 14px 34px -16px rgba(0,0,0,0.7);
+      --ag-accent: #34c77b;          /* battery %, Mow button, mowing dot */
+      --ag-fg: #eef5f0;              /* light base text for the dark body */
+      --ag-muted: #b9ccc0;
+      --ag-faint: #93a79b;
+      --ag-border: rgba(255,255,255,0.12);
+      --ag-border-strong: rgba(255,255,255,0.22);
+      --ag-surface: rgba(255,255,255,0.05);
+    }
+    /* the big state word inherits its colour from the card → set it explicitly */
+    .state { color: #eef5f0; }
+    /* the map stays light → force its overlay text dark so it reads */
+    .map .badge, .map .legend { color: #16241d; background: rgba(255,255,255,0.92); }
+    .map .pos-state { color: #44584c; background: rgba(255,255,255,0.85); }
+    /* active zone chip: readable green */
+    .zone-strip .zone.active { background: rgba(52,199,123,0.5); border-color: #34c77b; color: #eafff4; }
 ```
+
+Tip: raise the two background `rgba(...)` alpha values for a more opaque panel,
+or lower them for a glassier look over your dashboard background.
 
 ## Reserved slots (light up when the integration exposes them)
 
