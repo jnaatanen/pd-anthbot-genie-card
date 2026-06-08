@@ -62,6 +62,8 @@ invert_y: false                     # set true if the yard renders upside-down
 preferred_services: lawn_mower      # lawn_mower | anthbot_genie
 meters_per_unit: 0.001              # zone vertices are local mm → m (for area labels)
 refresh_interval: 0                 # seconds; >0 = card asks HA to poll more often
+show_position: true                 # draw the live mower dot
+show_trail: true                    # draw the coverage breadcrumb
 error_labels:                       # optional code → label map for the error state
   "12": Blade jammed
 entities:                           # optional explicit overrides (rarely needed)
@@ -84,6 +86,8 @@ entities:                           # optional explicit overrides (rarely needed
 | `preferred_services` | `lawn_mower` | Use the `lawn_mower` platform services (Pause/Resume/Mow/Dock) where they exist, falling back to `anthbot_genie.*` for Stop and zone starts. |
 | `meters_per_unit` | `0.001` | Scale factor from zone vertex units to metres, used for the computed per-zone area labels. The Genie reports millimetres. |
 | `refresh_interval` | `0` | Seconds. When > 0, the card calls `homeassistant.update_entity` on this interval to pull fresher data than the integration's own poll (min 5 s; same cloud cost as lowering the integration's `scan_interval`). |
+| `show_position` | `true` | Draw the live mower dot. Set `false` to hide it — e.g. until the integration emits position in the same coordinate frame as the zones. |
+| `show_trail` | `true` | Draw the coverage breadcrumb. Set `false` to hide it. |
 | `error_labels` | `{}` | Map an `error_code` value to a human label for the error state. |
 | `entities` | `{}` | Explicit entity-id overrides, keyed by logical name (`battery_level`, `map_area`, `rtk_state`, `zones`, `charging`, `connection`, `position`, …). |
 

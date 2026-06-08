@@ -22,6 +22,8 @@ entity: lawn_mower.<your_mower>
 # preferred_services: lawn_mower  # lawn_mower | anthbot_genie
 # meters_per_unit: 0.001          # zone vertex units → metres (Genie uses mm)
 # refresh_interval: 0             # seconds; >0 = card polls more often via update_entity
+# show_position: true             # draw the live mower dot (false to hide)
+# show_trail: true                # draw the coverage breadcrumb (false to hide)
 # error_labels:
 #   "12": Blade jammed
 #   "7": Bumper triggered

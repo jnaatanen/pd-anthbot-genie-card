@@ -24,7 +24,7 @@
  *     `area` attribute).
  */
 
-const CARD_VERSION = '0.4.0';
+const CARD_VERSION = '0.5.0';
 
 // SPEC literal-id fallbacks (used when serial-scoped resolution finds nothing,
 // e.g. the §11 acceptance tests that mock `sensor.anthbot_genie_*`).
@@ -285,6 +285,8 @@ class AnthbotGenieCard extends HTMLElement {
       entities: {},            // optional explicit id overrides, keyed by logical name
       error_labels: {},        // optional error_code → human label map
       refresh_interval: 0,     // seconds; >0 drives homeassistant.update_entity for fresher data
+      show_position: true,     // draw the live mower dot (sensor.<mower>_position)
+      show_trail: true,        // draw the coverage breadcrumb (sensor.<mower>_coverage_trail)
       ...config,
     };
     this._proj = null;
@@ -649,9 +651,9 @@ class AnthbotGenieCard extends HTMLElement {
       <div class="map ${variant}">
         <svg viewBox="${viewBox}" preserveAspectRatio="xMidYMid slice">
           ${polys}
-          ${this._renderCoverageTrail(proj)}
+          ${this._config.show_trail ? this._renderCoverageTrail(proj) : ''}
           ${labels}
-          ${this._renderLivePosition(proj, hasPos)}
+          ${this._config.show_position ? this._renderLivePosition(proj, hasPos) : ''}
           ${this._config.show_dock ? this._renderDockMarker(proj) : ''}
         </svg>
 
