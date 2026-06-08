@@ -136,6 +136,8 @@ card_mod:
     /* the map stays light → force its overlay text dark so it reads */
     .map .badge, .map .legend { color: #16241d; background: rgba(255,255,255,0.92); }
     .map .pos-state { color: #44584c; background: rgba(255,255,255,0.85); }
+    .map .pct-large { color: #16241d; background: rgba(255,255,255,0.92); }
+    .map .pct-large .sub { color: #44584c; }
     /* active zone chip: readable green */
     .zone-strip .zone.active { background: rgba(52,199,123,0.5); border-color: #34c77b; color: #eafff4; }
     /* live position dot — clearly visible: white with a dark outline */
