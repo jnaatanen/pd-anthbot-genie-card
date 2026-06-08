@@ -24,7 +24,7 @@
  *     `area` attribute).
  */
 
-const CARD_VERSION = '0.3.0';
+const CARD_VERSION = '0.3.1';
 
 // SPEC literal-id fallbacks (used when serial-scoped resolution finds nothing,
 // e.g. the §11 acceptance tests that mock `sensor.anthbot_genie_*`).
@@ -801,12 +801,18 @@ class AnthbotGenieCard extends HTMLElement {
           --ag-warn: var(--warning-color, #e0a106);
           --ag-danger: var(--error-color, #d32f2f);
           --ag-blue: var(--info-color, #2f7fd3);
-          --ag-surface-soft: color-mix(in srgb, var(--ag-accent) 7%, var(--ag-surface));
-          --ag-zone-stroke: color-mix(in srgb, var(--ag-accent) 55%, transparent);
-          --ag-z1: color-mix(in srgb, var(--ag-accent) 24%, transparent);
-          --ag-z2: color-mix(in srgb, var(--ag-accent) 17%, transparent);
-          --ag-z3: color-mix(in srgb, var(--ag-accent) 30%, var(--ag-surface));
-          --ag-z4: color-mix(in srgb, var(--ag-accent) 12%, transparent);
+          /* Map palette — explicitly green, independent of the theme accent so
+             the yard reads as grass. Light background → medium zone greens →
+             darkest green for the active zone. All overridable via card-mod. */
+          --ag-map-bg: oklch(97% 0.02 150);
+          --ag-zone-stroke: oklch(60% 0.08 150);
+          --ag-z1: oklch(88% 0.075 140);
+          --ag-z2: oklch(85% 0.075 162);
+          --ag-z3: oklch(86% 0.07 126);
+          --ag-z4: oklch(83% 0.08 176);
+          --ag-zone-active-fill: oklch(73% 0.13 150);
+          --ag-zone-active-stroke: oklch(45% 0.13 150);
+          --ag-zone-label-active: oklch(32% 0.09 150);
           --ag-mono: var(--ha-font-family-code, ui-monospace, 'SF Mono', Menlo, monospace);
           --ag-body: var(--ha-font-family-body, var(--mdc-typography-font-family, system-ui, sans-serif));
         }
@@ -818,7 +824,7 @@ class AnthbotGenieCard extends HTMLElement {
         .no-map svg { width:14px; height:14px; }
 
         /* MAP */
-        .map { position: relative; background: var(--ag-surface-soft); overflow: hidden; }
+        .map { position: relative; background: var(--ag-map-bg); overflow: hidden; }
         .map.compact { height: 180px; }
         .map.expanded { height: 280px; }
         .map svg { width: 100%; height: 100%; display: block; }
@@ -826,10 +832,10 @@ class AnthbotGenieCard extends HTMLElement {
         .zone-poly { stroke: var(--ag-zone-stroke); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
         .zone-poly.z1 { fill: var(--ag-z1); } .zone-poly.z2 { fill: var(--ag-z2); }
         .zone-poly.z3 { fill: var(--ag-z3); } .zone-poly.z4 { fill: var(--ag-z4); }
-        .zone-poly.active { fill: var(--ag-accent-soft); stroke: var(--ag-accent); stroke-width: 1.5; stroke-dasharray: 6 4; animation: dashpulse 4s linear infinite; }
+        .zone-poly.active { fill: var(--ag-zone-active-fill); stroke: var(--ag-zone-active-stroke); stroke-width: 1.5; stroke-dasharray: 6 4; animation: dashpulse 4s linear infinite; }
         @keyframes dashpulse { to { stroke-dashoffset: -40; } }
 
-        .zone-label { font: 500 10px/1 var(--ag-mono); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ag-accent-deep); pointer-events: none; }
+        .zone-label { font: 500 10px/1 var(--ag-mono); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ag-zone-label-active); pointer-events: none; }
         .zone-label.muted { fill: var(--ag-muted); }
         .zone-label-area { font: 400 9px/1 var(--ag-mono); fill: var(--ag-faint); pointer-events: none; }
 
@@ -846,7 +852,7 @@ class AnthbotGenieCard extends HTMLElement {
         .dot-blue { background: var(--ag-blue); } .dot-danger { background: var(--ag-danger); }
         .legend { display: inline-flex; align-items: center; gap: 6px; background: color-mix(in srgb, var(--ag-surface) 92%, transparent); backdrop-filter: blur(8px); padding: 6px 10px; border-radius: 999px; font: 500 11px/1 var(--ag-mono); color: var(--ag-muted); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
         .sw { display: inline-block; width: 10px; height: 8px; border-radius: 1px; }
-        .sw-active { background: var(--ag-accent-soft); border: 1px solid var(--ag-accent); }
+        .sw-active { background: var(--ag-zone-active-fill); border: 1px solid var(--ag-zone-active-stroke); }
         .sw-base { background: var(--ag-z1); }
         .overlay-br { position: absolute; bottom: 14px; right: 16px; }
         .pct-large { background: color-mix(in srgb, var(--ag-surface) 92%, transparent); backdrop-filter: blur(8px); padding: 8px 12px; border-radius: 10px; font: 600 20px/1 var(--ag-body); letter-spacing: -0.02em; box-shadow: 0 1px 3px rgba(0,0,0,0.12); font-variant-numeric: tabular-nums; }
