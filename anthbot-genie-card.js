@@ -24,7 +24,7 @@
  *     `area` attribute).
  */
 
-const CARD_VERSION = '0.2.0';
+const CARD_VERSION = '0.3.0';
 
 // SPEC literal-id fallbacks (used when serial-scoped resolution finds nothing,
 // e.g. the §11 acceptance tests that mock `sensor.anthbot_genie_*`).
@@ -266,6 +266,7 @@ class AnthbotGenieCard extends HTMLElement {
     this._zoneSignature = null;   // recompute proj when zones change
     this._renderSignature = null; // skip re-render (and animation thrash) when nothing changed
     this._hist = null;            // { token, samples:[{t,batt,area}] } for estimates
+    this._root = null;            // persistent content container (scaffold built once)
     this.attachShadow({ mode: 'open' });
   }
 
@@ -472,10 +473,22 @@ class AnthbotGenieCard extends HTMLElement {
   // ────────────────────────────────────────────────────────────────────────
   // Render.
   // ────────────────────────────────────────────────────────────────────────
+  // Build the static <style> and a content container exactly once. Re-renders
+  // only replace the container's innerHTML, so this <style> — and any card-mod
+  // injected <style> sibling in the shadow root — survive untouched. Replacing
+  // the whole shadowRoot each update used to drop all styles for a frame,
+  // flashing the background before card-mod re-applied.
+  _ensureScaffold() {
+    if (this._root && this.shadowRoot.contains(this._root)) return;
+    this.shadowRoot.innerHTML = `<style>${this._styleCss()}</style><div class="ag-root"></div>`;
+    this._root = this.shadowRoot.querySelector('.ag-root');
+  }
+
   _render() {
     if (!this._config) return;
+    this._ensureScaffold();
     if (!this._hass) {
-      this.shadowRoot.innerHTML = this._styleBlock() + this._skeletonHTML();
+      this._root.innerHTML = this._skeletonHTML();
       this._renderSignature = null;
       return;
     }
@@ -515,7 +528,7 @@ class AnthbotGenieCard extends HTMLElement {
     if (sig === this._renderSignature) return;
     this._renderSignature = sig;
 
-    this.shadowRoot.innerHTML = this._styleBlock() + this._cardHTML({ zones, cov, active, stance, est, online });
+    this._root.innerHTML = this._cardHTML({ zones, cov, active, stance, est, online });
 
     // Wire interaction.
     const root = this.shadowRoot;
@@ -772,9 +785,8 @@ class AnthbotGenieCard extends HTMLElement {
   // variables (§7). The mock's tokens become `--ag-*` fallbacks so the card
   // still looks right if a theme omits a variable. color-mix uses `in srgb`
   // for predictable mixing against arbitrary theme colours.
-  _styleBlock() {
+  _styleCss() {
     return `
-      <style>
         :host {
           display: block;
           --ag-surface: var(--ha-card-background, var(--card-background-color, #fff));
@@ -902,7 +914,6 @@ class AnthbotGenieCard extends HTMLElement {
         @media (prefers-reduced-motion: reduce) {
           .zone-poly.active, .dot-accent, .pos-state, circle animate { animation: none !important; }
         }
-      </style>
     `;
   }
 }
