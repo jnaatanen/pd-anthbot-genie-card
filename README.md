@@ -138,6 +138,9 @@ card_mod:
     .map .pos-state { color: #44584c; background: rgba(255,255,255,0.85); }
     /* active zone chip: readable green */
     .zone-strip .zone.active { background: rgba(52,199,123,0.5); border-color: #34c77b; color: #eafff4; }
+    /* live position dot — clearly visible: white with a dark outline */
+    .map svg circle[r="5"] { fill: #ffffff; stroke: #14241d; stroke-width: 2; }
+    .map svg g:not(.dock-marker) path { fill: #ffffff; stroke: #14241d; stroke-width: 0.5; }
 ```
 
 Tip: raise the two background `rgba(...)` alpha values for a more opaque panel,
