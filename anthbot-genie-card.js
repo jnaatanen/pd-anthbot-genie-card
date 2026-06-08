@@ -24,7 +24,7 @@
  *     `area` attribute).
  */
 
-const CARD_VERSION = '0.3.1';
+const CARD_VERSION = '0.3.2';
 
 // SPEC literal-id fallbacks (used when serial-scoped resolution finds nothing,
 // e.g. the §11 acceptance tests that mock `sensor.anthbot_genie_*`).
@@ -336,6 +336,15 @@ class AnthbotGenieCard extends HTMLElement {
   _stateStr(key) { const s = this._state(key); return s ? s.state : undefined; }
   _stateNum(key) { const s = this._state(key); return s ? asNum(s.state) : null; }
 
+  // Signature fragment for the live position so the dot re-renders whenever the
+  // mower moves — even if no other tracked field changed in that poll.
+  _positionSig() {
+    const p = this._state('position');
+    if (!p) return null;
+    const a = p.attributes || {};
+    return `${a.x},${a.y},${a.heading},${a.rtk_accuracy_cm},${p.last_updated}`;
+  }
+
   // ────────────────────────────────────────────────────────────────────────
   // Derived data.
   // ────────────────────────────────────────────────────────────────────────
@@ -522,7 +531,7 @@ class AnthbotGenieCard extends HTMLElement {
       active: [...active], cov, batt: this._stateNum('battery_level'),
       rtk: this._stateStr('rtk_state'), err: this._errorText(),
       mt: this._stateStr('mowing_time'), ch: this._stateStr('cutting_height'),
-      tot: this._stateStr('mowing_area_total'), pos: !!this._state('position'),
+      tot: this._stateStr('mowing_area_total'), pos: this._positionSig(),
       lc: mower ? mower.last_changed : null, est: est == null ? null : Math.round(est),
     });
     if (sig === this._renderSignature) return;
