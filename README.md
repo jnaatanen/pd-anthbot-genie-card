@@ -52,7 +52,7 @@ your own risk. See [LICENSE](LICENSE) for the full terms.
 
 ```yaml
 type: custom:anthbot-genie-card
-entity: lawn_mower.mokki_antti      # your mower's lawn_mower entity
+entity: lawn_mower.<your_mower>      # your mower's lawn_mower entity
 # optional:
 variant: expanded                   # compact | expanded   (default expanded)
 show_dock: true
@@ -62,7 +62,7 @@ meters_per_unit: 0.001              # zone vertices are local mm → m (for area
 error_labels:                       # optional code → label map for the error state
   "12": Blade jammed
 entities:                           # optional explicit overrides (rarely needed)
-  battery_level: sensor.mokki_antti_battery_level
+  battery_level: sensor.<your_mower>_battery_level
 ```
 
 `entity` is the only required option. Everything else auto-resolves.
@@ -86,7 +86,7 @@ entities:                           # optional explicit overrides (rarely needed
 ## How it finds your entities
 
 The `anthbot_genie_ha` integration names its entities after each mower's **device
-alias** (e.g. `sensor.mokki_antti_battery_level`), and a single Home Assistant
+alias** (e.g. `sensor.<your_mower>_battery_level`), and a single Home Assistant
 instance may have **several mowers**. So the card does **not** assume a fixed
 `sensor.anthbot_genie_*` id scheme. Instead it:
 
@@ -111,7 +111,7 @@ properties inherit across the shadow boundary:
 
 ```yaml
 type: custom:anthbot-genie-card
-entity: lawn_mower.mokki_antti
+entity: lawn_mower.<your_mower>
 card_mod:
   style: |
     ha-card { --ag-accent: #7c3aed; }
