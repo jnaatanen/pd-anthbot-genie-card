@@ -1,0 +1,38 @@
+# Anthbot Genie Card — copy-paste examples.
+# Replace `lawn_mower.mokki_antti` with your mower's entity id
+# (Developer Tools → States → filter "lawn_mower").
+
+# 1. Minimal — expanded map card.
+type: custom:anthbot-genie-card
+entity: lawn_mower.mokki_antti
+
+# ---------------------------------------------------------------------------
+# 2. Compact variant (380px) — good for a sidebar or a dense dashboard.
+# type: custom:anthbot-genie-card
+# entity: lawn_mower.mokki_antti
+# variant: compact
+
+# ---------------------------------------------------------------------------
+# 3. Full options.
+# type: custom:anthbot-genie-card
+# entity: lawn_mower.mokki_antti
+# variant: expanded
+# show_dock: true
+# invert_y: false                 # flip if the yard renders upside-down
+# preferred_services: lawn_mower  # lawn_mower | anthbot_genie
+# meters_per_unit: 0.001          # zone vertex units → metres (Genie uses mm)
+# error_labels:
+#   "12": Blade jammed
+#   "7": Bumper triggered
+# entities:                       # only if auto-resolution needs help
+#   battery_level: sensor.mokki_antti_battery_level
+#   map_area: sensor.mokki_antti_map_area
+
+# ---------------------------------------------------------------------------
+# 4. Two mowers — one card each; serial scoping keeps them independent.
+# type: vertical-stack
+# cards:
+#   - type: custom:anthbot-genie-card
+#     entity: lawn_mower.mokki_antti
+#   - type: custom:anthbot-genie-card
+#     entity: lawn_mower.koti_antti

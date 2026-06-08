@@ -1,0 +1,9 @@
+# Local-only scratch / test scaffolding — never shipped.
+.dev-local/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
