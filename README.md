@@ -8,7 +8,15 @@ glows the zone currently being mowed, shows honest coverage
 (`mowing_area / map_area`), battery, RTK state and session stats, and exposes
 Pause / Resume / Dock / Stop / per-zone-start controls.
 
-![Anthbot Genie Card — dark "glass" card-mod theme](docs/preview.png)
+<table>
+  <tr>
+    <td align="center"><img src="docs/preview.png" width="250" alt="Yard map, zones and controls"><br><sub>Yard map, zones &amp; controls</sub></td>
+    <td align="center"><img src="docs/preview2.png" width="250" alt="Mowing with active zones and coverage"><br><sub>Mowing — active zones &amp; coverage</sub></td>
+    <td align="center"><img src="docs/preview3.png" width="250" alt="Rain delay overlay"><br><sub>Rain delay overlay</sub></td>
+  </tr>
+</table>
+
+<sub>Shown with the dark "glass" card-mod theme from the [Theming](#theming) section.</sub>
 
 > **Requires the [`anthbot_genie_ha`](https://github.com/vincentjanv/anthbot_genie_ha)
 > integration by [@vincentjanv](https://github.com/vincentjanv).** Install and
