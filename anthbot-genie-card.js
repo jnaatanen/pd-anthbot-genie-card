@@ -24,7 +24,7 @@
  *     `area` attribute).
  */
 
-const CARD_VERSION = '0.6.0';
+const CARD_VERSION = '0.6.1';
 
 // SPEC literal-id fallbacks (used when serial-scoped resolution finds nothing,
 // e.g. the §11 acceptance tests that mock `sensor.anthbot_genie_*`).
@@ -672,7 +672,7 @@ class AnthbotGenieCard extends HTMLElement {
           ${this._config.show_dock ? this._renderDockMarker(proj) : ''}
         </svg>
 
-        ${raining ? `<div class="rain-overlay"></div><div class="rain-badge">${icon('rain')}Rain delay</div>` : ''}
+        ${raining ? `${this._renderRain()}<div class="rain-badge">${icon('rain')}Rain delay</div>` : ''}
 
         <div class="overlay-tl">
           <span class="badge ${stance.dot === 'accent' ? '' : 'muted'}"><span class="dot dot-${stance.dot}"></span>${this._esc(badgeText)}</span>
@@ -706,6 +706,19 @@ class AnthbotGenieCard extends HTMLElement {
     }).filter(Boolean).join(' ');
     if (!coords) return '';
     return `<polyline class="coverage-trail" points="${coords}" />`;
+  }
+
+  // Animated rain: dashed diagonal streaks falling top-left → bottom-right,
+  // full width. Dashes are stroke-dasharray segments; animating dashoffset makes
+  // them fall along each line. Staggered per line for a natural look.
+  _renderRain() {
+    let lines = '';
+    for (let i = 0; i < 22; i++) {
+      const x = i * 6 - 16;
+      const delay = -(((i * 37) % 60)) / 100;
+      lines += `<line x1="${x}" y1="-8" x2="${x + 16}" y2="72" style="animation-delay:${delay}s"/>`;
+    }
+    return `<div class="rain-overlay"><svg class="rain-fx" viewBox="0 0 100 64" preserveAspectRatio="xMidYMid slice">${lines}</svg></div>`;
   }
 
   _renderLivePosition(proj, hasPos) {
@@ -917,8 +930,10 @@ class AnthbotGenieCard extends HTMLElement {
         .zone-poly.active { fill: var(--ag-zone-active-fill); stroke: var(--ag-zone-active-stroke); stroke-width: 1.5; stroke-dasharray: 6 4; animation: dashpulse 4s linear infinite; }
         @keyframes dashpulse { to { stroke-dashoffset: -40; } }
         .coverage-trail { fill: none; stroke: var(--ag-trail); stroke-width: 2; opacity: 0.6; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
-        .rain-overlay { position: absolute; inset: 0; pointer-events: none; background-image: repeating-linear-gradient(110deg, transparent 0 7px, var(--ag-rain, rgba(255,255,255,0.5)) 7px 8px, transparent 8px 16px); animation: ag-rain 0.55s linear infinite; }
-        @keyframes ag-rain { from { background-position: 0 0; } to { background-position: -28px 170px; } }
+        .rain-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+        .rain-fx { width: 100%; height: 100%; display: block; }
+        .rain-fx line { stroke: var(--ag-rain, rgba(255,255,255,0.55)); stroke-width: 1.3; stroke-dasharray: 3 7; vector-effect: non-scaling-stroke; animation: ag-rain 0.6s linear infinite; }
+        @keyframes ag-rain { to { stroke-dashoffset: -40; } }
         .rain-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.92); color: #14241d; padding: 7px 12px; border-radius: 999px; font: 600 12px/1 var(--ag-body); box-shadow: 0 2px 8px rgba(0,0,0,0.18); z-index: 2; }
         .rain-badge svg { width: 14px; height: 14px; color: var(--ag-blue); }
 
@@ -1005,7 +1020,7 @@ class AnthbotGenieCard extends HTMLElement {
           50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--ag-accent) 5%, transparent); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .zone-poly.active, .dot-accent, .pos-state, .rain-overlay, circle animate { animation: none !important; }
+          .zone-poly.active, .dot-accent, .pos-state, .rain-fx line, circle animate { animation: none !important; }
         }
     `;
   }
