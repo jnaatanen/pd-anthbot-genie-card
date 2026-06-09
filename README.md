@@ -64,6 +64,7 @@ meters_per_unit: 0.001              # zone vertices are local mm → m (for area
 refresh_interval: 0                 # seconds; >0 = card asks HA to poll more often
 show_position: true                 # draw the live mower dot
 show_trail: true                    # draw the coverage breadcrumb
+rain_entity: binary_sensor.rain     # animated rain overlay when this binary_sensor is on
 error_labels:                       # optional code → label map for the error state
   "12": Blade jammed
 entities:                           # optional explicit overrides (rarely needed)
@@ -88,6 +89,7 @@ entities:                           # optional explicit overrides (rarely needed
 | `refresh_interval` | `0` | Seconds. When > 0, the card calls `homeassistant.update_entity` on this interval to pull fresher data than the integration's own poll (min 5 s; same cloud cost as lowering the integration's `scan_interval`). |
 | `show_position` | `true` | Draw the live mower dot. Set `false` to hide it — e.g. until the integration emits position in the same coordinate frame as the zones. |
 | `show_trail` | `true` | Draw the coverage breadcrumb. Set `false` to hide it. |
+| `rain_entity` | `null` | A `binary_sensor` that means "rain is blocking the mower". When it's `on` and the mower isn't mowing, the map shows an animated rain overlay and a **Rain delay** badge. Point it at any rain/weather binary sensor (the integration has no dedicated "raining now" entity yet). |
 | `error_labels` | `{}` | Map an `error_code` value to a human label for the error state. |
 | `entities` | `{}` | Explicit entity-id overrides, keyed by logical name (`battery_level`, `map_area`, `rtk_state`, `zones`, `charging`, `connection`, `position`, …). |
 
@@ -153,7 +155,7 @@ card_mod:
 
 Tip: raise the two background `rgba(...)` alpha values for a more opaque panel,
 or lower them for a glassier look over your dashboard background. The coverage
-trail colour is `--ag-trail` if you want to recolour the breadcrumb.
+trail colour is `--ag-trail`, and the rain streak colour is `--ag-rain`.
 
 ## Reserved slots (light up when the integration exposes them)
 

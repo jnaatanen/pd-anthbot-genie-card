@@ -24,7 +24,7 @@
  *     `area` attribute).
  */
 
-const CARD_VERSION = '0.5.0';
+const CARD_VERSION = '0.6.0';
 
 // SPEC literal-id fallbacks (used when serial-scoped resolution finds nothing,
 // e.g. the §11 acceptance tests that mock `sensor.anthbot_genie_*`).
@@ -249,6 +249,7 @@ const ICON = {
   check: '<path d="M20 6L9 17l-5-5"/>',
   crosshair: '<circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M1 12h6M17 12h6"/>',
   battery: '<rect x="2" y="8" width="18" height="8" rx="1"/><rect x="20" y="10" width="2" height="4"/>',
+  rain: '<path d="M12 3.5s5.5 6 5.5 10a5.5 5.5 0 0 1-11 0c0-4 5.5-10 5.5-10z"/>',
 };
 function icon(name, extra = '') {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${extra}>${ICON[name] || ''}</svg>`;
@@ -287,6 +288,7 @@ class AnthbotGenieCard extends HTMLElement {
       refresh_interval: 0,     // seconds; >0 drives homeassistant.update_entity for fresher data
       show_position: true,     // draw the live mower dot (sensor.<mower>_position)
       show_trail: true,        // draw the coverage breadcrumb (sensor.<mower>_coverage_trail)
+      rain_entity: null,       // binary_sensor that means "rain is blocking" → animated rain overlay
       ...config,
     };
     this._proj = null;
@@ -429,6 +431,17 @@ class AnthbotGenieCard extends HTMLElement {
     }
   }
 
+  // Rain delay: the configured rain_entity is `on` and the mower isn't mowing
+  // (i.e. rain is keeping it parked). The integration has no clean "raining now"
+  // signal, so the trigger entity is user-configured.
+  _isRaining(stance) {
+    const id = this._config.rain_entity;
+    if (!id) return false;
+    const e = this._hass.states[id];
+    if (!e || e.state !== 'on') return false;
+    return stance.key !== 'mowing';
+  }
+
   _errorText() {
     const raw = this._stateStr('error_code');
     if (raw == null || raw === '' || raw === '0' || raw === 'unknown') return null;
@@ -569,6 +582,7 @@ class AnthbotGenieCard extends HTMLElement {
       mt: this._stateStr('mowing_time'), ch: this._stateStr('cutting_height'),
       tot: this._stateStr('mowing_area_total'), pos: this._positionSig(), trail: this._trailSig(),
       lc: mower ? mower.last_changed : null, est: est == null ? null : Math.round(est),
+      rain: this._isRaining(stance),
     });
     if (sig === this._renderSignature) return;
     this._renderSignature = sig;
@@ -618,6 +632,7 @@ class AnthbotGenieCard extends HTMLElement {
   // ── MAP ──────────────────────────────────────────────────────────────────
   _mapBlock({ zones, cov, active, stance }) {
     const variant = this._config.variant;
+    const raining = this._isRaining(stance);
     const viewBox = variant === 'compact' ? '0 0 380 180' : '0 0 480 280';
     const proj = this._proj;
     const activeName = this._activeZoneName(zones, active);
@@ -656,6 +671,8 @@ class AnthbotGenieCard extends HTMLElement {
           ${this._config.show_position ? this._renderLivePosition(proj, hasPos) : ''}
           ${this._config.show_dock ? this._renderDockMarker(proj) : ''}
         </svg>
+
+        ${raining ? `<div class="rain-overlay"></div><div class="rain-badge">${icon('rain')}Rain delay</div>` : ''}
 
         <div class="overlay-tl">
           <span class="badge ${stance.dot === 'accent' ? '' : 'muted'}"><span class="dot dot-${stance.dot}"></span>${this._esc(badgeText)}</span>
@@ -900,6 +917,10 @@ class AnthbotGenieCard extends HTMLElement {
         .zone-poly.active { fill: var(--ag-zone-active-fill); stroke: var(--ag-zone-active-stroke); stroke-width: 1.5; stroke-dasharray: 6 4; animation: dashpulse 4s linear infinite; }
         @keyframes dashpulse { to { stroke-dashoffset: -40; } }
         .coverage-trail { fill: none; stroke: var(--ag-trail); stroke-width: 2; opacity: 0.6; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+        .rain-overlay { position: absolute; inset: 0; pointer-events: none; background-image: repeating-linear-gradient(110deg, transparent 0 7px, var(--ag-rain, rgba(255,255,255,0.5)) 7px 8px, transparent 8px 16px); animation: ag-rain 0.55s linear infinite; }
+        @keyframes ag-rain { from { background-position: 0 0; } to { background-position: -28px 170px; } }
+        .rain-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.92); color: #14241d; padding: 7px 12px; border-radius: 999px; font: 600 12px/1 var(--ag-body); box-shadow: 0 2px 8px rgba(0,0,0,0.18); z-index: 2; }
+        .rain-badge svg { width: 14px; height: 14px; color: var(--ag-blue); }
 
         .zone-label { font: 500 10px/1 var(--ag-mono); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ag-zone-label-active); pointer-events: none; }
         .zone-label.muted { fill: var(--ag-muted); }
@@ -984,7 +1005,7 @@ class AnthbotGenieCard extends HTMLElement {
           50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--ag-accent) 5%, transparent); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .zone-poly.active, .dot-accent, .pos-state, circle animate { animation: none !important; }
+          .zone-poly.active, .dot-accent, .pos-state, .rain-overlay, circle animate { animation: none !important; }
         }
     `;
   }
