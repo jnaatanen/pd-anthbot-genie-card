@@ -65,6 +65,7 @@ refresh_interval: 0                 # seconds; >0 = card asks HA to poll more of
 show_position: true                 # draw the live mower dot
 show_trail: true                    # draw the coverage breadcrumb
 rain_entity: binary_sensor.rain     # animated rain overlay when this binary_sensor is on
+show_yard_map: true                 # draw the real yard shape from sensor.<mower>_yard_map
 error_labels:                       # optional code → label map for the error state
   "12": Blade jammed
 entities:                           # optional explicit overrides (rarely needed)
@@ -90,6 +91,7 @@ entities:                           # optional explicit overrides (rarely needed
 | `show_position` | `true` | Draw the live mower dot. Set `false` to hide it — e.g. until the integration emits position in the same coordinate frame as the zones. |
 | `show_trail` | `true` | Draw the coverage breadcrumb. Set `false` to hide it. |
 | `rain_entity` | `null` | A `binary_sensor` that means "rain is blocking the mower". When it's `on` and the mower isn't mowing, the map shows an animated rain overlay and a **Rain delay** badge. Point it at any rain/weather binary sensor (the integration has no dedicated "raining now" entity yet). |
+| `show_yard_map` | `true` | Draw the real yard shape accumulated by the integration from the mower's path (`sensor.<mower>_yard_map` — a `boundary` hull polygon or `points`), as a base layer under the zones. The zone rectangles are only bounding boxes; this is the true shape. Renders nothing until that entity exists. |
 | `error_labels` | `{}` | Map an `error_code` value to a human label for the error state. |
 | `entities` | `{}` | Explicit entity-id overrides, keyed by logical name (`battery_level`, `map_area`, `rtk_state`, `zones`, `charging`, `connection`, `position`, …). |
 
@@ -155,7 +157,8 @@ card_mod:
 
 Tip: raise the two background `rgba(...)` alpha values for a more opaque panel,
 or lower them for a glassier look over your dashboard background. The coverage
-trail colour is `--ag-trail`, and the rain streak colour is `--ag-rain`.
+trail colour is `--ag-trail`, the rain streak colour is `--ag-rain`, and the
+real-yard-map fill is `--ag-map-fill`.
 
 ## Reserved slots (light up when the integration exposes them)
 
@@ -168,6 +171,7 @@ activate:
 | …plus `heading` (deg, 0=N) | Heading arrow on the dot |
 | …plus `rtk_accuracy_cm` | Accuracy circle around the dot |
 | `sensor.<mower>_coverage_trail` with `points` | Breadcrumb polyline of the mowed path this session |
+| `sensor.<mower>_yard_map` with `boundary`/`points` | The real mowed yard shape as a base map (zone rectangles are only bounding boxes) |
 | `lawn_mower` attrs `dock_x`, `dock_y` | Real-coordinate dock marker |
 
 Until then the card shows `RTK <state> · live position not exposed`.

@@ -25,6 +25,7 @@ entity: lawn_mower.<your_mower>
 # show_position: true             # draw the live mower dot (false to hide)
 # show_trail: true                # draw the coverage breadcrumb (false to hide)
 # rain_entity: binary_sensor.rain # animated rain + "Rain delay" badge when this is on
+# show_yard_map: true             # draw real yard shape from sensor.<mower>_yard_map
 # error_labels:
 #   "12": Blade jammed
 #   "7": Bumper triggered

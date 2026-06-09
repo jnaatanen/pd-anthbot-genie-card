@@ -24,7 +24,7 @@
  *     `area` attribute).
  */
 
-const CARD_VERSION = '0.6.1';
+const CARD_VERSION = '0.7.0';
 
 // SPEC literal-id fallbacks (used when serial-scoped resolution finds nothing,
 // e.g. the §11 acceptance tests that mock `sensor.anthbot_genie_*`).
@@ -44,6 +44,7 @@ const FALLBACK = {
   zones: 'sensor.anthbot_genie_zones',
   position: 'sensor.anthbot_genie_position',
   coverage_trail: 'sensor.anthbot_genie_coverage_trail',
+  yard_map: 'sensor.anthbot_genie_yard_map',
 };
 
 // Domain per logical key, for fallback/zone discovery.
@@ -51,7 +52,7 @@ const KEY_DOMAIN = {
   battery_level: 'sensor', mower_status: 'sensor', mowing_time: 'sensor',
   mowing_area: 'sensor', map_area: 'sensor', mowing_area_total: 'sensor',
   cutting_height: 'sensor', rtk_state: 'sensor', error_code: 'sensor',
-  zones: 'sensor', position: 'sensor', coverage_trail: 'sensor',
+  zones: 'sensor', position: 'sensor', coverage_trail: 'sensor', yard_map: 'sensor',
   charging: 'binary_sensor', connection: 'binary_sensor',
 };
 
@@ -62,7 +63,7 @@ const KEY_SLUG = {
   mowing_time: 'mowing_time_session', mowing_area: 'mowing_area_session',
   map_area: 'map_area', mowing_area_total: 'mowing_area_total',
   cutting_height: 'cutting_height', rtk_state: 'rtk_state',
-  error_code: 'error_code', zones: 'zones', coverage_trail: 'coverage_trail',
+  error_code: 'error_code', zones: 'zones', coverage_trail: 'coverage_trail', yard_map: 'yard_map',
   charging: 'charging', connection: 'connection',
 };
 
@@ -289,6 +290,7 @@ class AnthbotGenieCard extends HTMLElement {
       show_position: true,     // draw the live mower dot (sensor.<mower>_position)
       show_trail: true,        // draw the coverage breadcrumb (sensor.<mower>_coverage_trail)
       rain_entity: null,       // binary_sensor that means "rain is blocking" → animated rain overlay
+      show_yard_map: true,     // draw the real yard shape from sensor.<mower>_yard_map (boundary/points)
       ...config,
     };
     this._proj = null;
@@ -381,6 +383,16 @@ class AnthbotGenieCard extends HTMLElement {
     if (!e) return null;
     const pts = e.attributes && e.attributes.points;
     return `${Array.isArray(pts) ? pts.length : 0}:${e.last_updated}`;
+  }
+
+  // Signature fragment for the accumulated yard map (boundary/points).
+  _yardMapSig() {
+    const e = this._state('yard_map');
+    if (!e) return null;
+    const a = e.attributes || {};
+    const b = Array.isArray(a.boundary) ? a.boundary.length : 0;
+    const p = Array.isArray(a.points) ? a.points.length : 0;
+    return `${b}/${p}:${e.last_updated}`;
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -580,7 +592,7 @@ class AnthbotGenieCard extends HTMLElement {
       active: [...active], cov, batt: this._stateNum('battery_level'),
       rtk: this._stateStr('rtk_state'), err: this._errorText(),
       mt: this._stateStr('mowing_time'), ch: this._stateStr('cutting_height'),
-      tot: this._stateStr('mowing_area_total'), pos: this._positionSig(), trail: this._trailSig(),
+      tot: this._stateStr('mowing_area_total'), pos: this._positionSig(), trail: this._trailSig(), ym: this._yardMapSig(),
       lc: mower ? mower.last_changed : null, est: est == null ? null : Math.round(est),
       rain: this._isRaining(stance),
     });
@@ -665,6 +677,7 @@ class AnthbotGenieCard extends HTMLElement {
     return `
       <div class="map ${variant}">
         <svg viewBox="${viewBox}" preserveAspectRatio="xMidYMid slice">
+          ${this._config.show_yard_map ? this._renderYardMap(proj) : ''}
           ${polys}
           ${this._config.show_trail ? this._renderCoverageTrail(proj) : ''}
           ${labels}
@@ -688,6 +701,39 @@ class AnthbotGenieCard extends HTMLElement {
         <div class="pos-state">${icon('crosshair')}<span>${posText}</span></div>
       </div>
     `;
+  }
+
+  // Real yard shape accumulated from the mower's path (sensor.<mower>_yard_map):
+  // prefer a concave-hull `boundary` polygon; fall back to coverage `points`.
+  // Rendered as the base layer, under the zone rectangles. Same projection.
+  _renderYardMap(proj) {
+    if (!proj) return '';
+    const e = this._state('yard_map');
+    if (!e) return '';
+    const a = e.attributes || {};
+    const boundary = a.boundary;
+    if (Array.isArray(boundary) && boundary.length >= 3) {
+      const d = boundary.map((p, i) => {
+        const x = asNum(Array.isArray(p) ? p[0] : p && p.x);
+        const y = asNum(Array.isArray(p) ? p[1] : p && p.y);
+        if (x == null || y == null) return '';
+        const [vx, vy] = project([x, y], proj);
+        return `${i === 0 ? 'M' : 'L'} ${vx.toFixed(1)} ${vy.toFixed(1)}`;
+      }).filter(Boolean).join(' ');
+      return d ? `<path class="yard-map" d="${d} Z"/>` : '';
+    }
+    const pts = a.points;
+    if (Array.isArray(pts) && pts.length) {
+      const dots = pts.slice(0, 4000).map((p) => {
+        const x = asNum(Array.isArray(p) ? p[0] : p && p.x);
+        const y = asNum(Array.isArray(p) ? p[1] : p && p.y);
+        if (x == null || y == null) return '';
+        const [vx, vy] = project([x, y], proj);
+        return `<circle cx="${vx.toFixed(1)}" cy="${vy.toFixed(1)}" r="2.5"/>`;
+      }).join('');
+      return dots ? `<g class="yard-map-pts">${dots}</g>` : '';
+    }
+    return '';
   }
 
   // Coverage breadcrumb: the path the mower has mowed this session
@@ -908,6 +954,7 @@ class AnthbotGenieCard extends HTMLElement {
           --ag-zone-active-stroke: oklch(45% 0.13 150);
           --ag-zone-label-active: oklch(32% 0.09 150);
           --ag-trail: oklch(40% 0.12 150);
+          --ag-map-fill: oklch(84% 0.085 152);
           --ag-mono: var(--ha-font-family-code, ui-monospace, 'SF Mono', Menlo, monospace);
           --ag-body: var(--ha-font-family-body, var(--mdc-typography-font-family, system-ui, sans-serif));
         }
@@ -930,6 +977,8 @@ class AnthbotGenieCard extends HTMLElement {
         .zone-poly.active { fill: var(--ag-zone-active-fill); stroke: var(--ag-zone-active-stroke); stroke-width: 1.5; stroke-dasharray: 6 4; animation: dashpulse 4s linear infinite; }
         @keyframes dashpulse { to { stroke-dashoffset: -40; } }
         .coverage-trail { fill: none; stroke: var(--ag-trail); stroke-width: 2; opacity: 0.6; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+        .yard-map { fill: var(--ag-map-fill); stroke: var(--ag-zone-stroke); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: 0.95; }
+        .yard-map-pts circle { fill: var(--ag-map-fill); }
         .rain-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
         .rain-fx { width: 100%; height: 100%; display: block; }
         .rain-fx line { stroke: var(--ag-rain, rgba(255,255,255,0.55)); stroke-width: 1.3; stroke-dasharray: 3 7; vector-effect: non-scaling-stroke; animation: ag-rain 0.6s linear infinite; }
