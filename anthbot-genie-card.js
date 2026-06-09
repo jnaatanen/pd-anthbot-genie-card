@@ -24,7 +24,7 @@
  *     `area` attribute).
  */
 
-const CARD_VERSION = '0.7.0';
+const CARD_VERSION = '0.7.1';
 
 // SPEC literal-id fallbacks (used when serial-scoped resolution finds nothing,
 // e.g. the §11 acceptance tests that mock `sensor.anthbot_genie_*`).
@@ -592,7 +592,7 @@ class AnthbotGenieCard extends HTMLElement {
       active: [...active], cov, batt: this._stateNum('battery_level'),
       rtk: this._stateStr('rtk_state'), err: this._errorText(),
       mt: this._stateStr('mowing_time'), ch: this._stateStr('cutting_height'),
-      tot: this._stateStr('mowing_area_total'), pos: this._positionSig(), trail: this._trailSig(), ym: this._yardMapSig(),
+      tot: this._stateStr('map_area'), pos: this._positionSig(), trail: this._trailSig(), ym: this._yardMapSig(),
       lc: mower ? mower.last_changed : null, est: est == null ? null : Math.round(est),
       rain: this._isRaining(stance),
     });
@@ -838,7 +838,7 @@ class AnthbotGenieCard extends HTMLElement {
     const mins = secondsToMinutes(this._stateStr('mowing_time'));
     const height = this._stateNum('cutting_height');
     const rtk = rtkLabel(this._stateStr('rtk_state'));
-    const totalArea = this._stateNum('mowing_area_total');
+    const lawnSize = this._stateNum('map_area');
     const errorText = this._errorText();
 
     // where-line
@@ -872,7 +872,7 @@ class AnthbotGenieCard extends HTMLElement {
           <div><div class="lbl">Time</div><div class="val">${mins != null ? mins : '—'}<span class="unit">min</span></div></div>
           <div><div class="lbl">Height</div><div class="val">${height != null ? height : '—'}<span class="unit">mm</span></div></div>
           <div><div class="lbl">RTK</div><div class="val" style="color:${rtkColorVar(rtk)}">${rtk || '—'}</div></div>
-          <div><div class="lbl">Total</div><div class="val">${totalArea != null ? formatAreaShort(totalArea) : '—'}<span class="unit">${totalArea != null && totalArea >= 1000 ? 'k m²' : 'm²'}</span></div></div>
+          <div><div class="lbl">Lawn size</div><div class="val">${lawnSize != null ? formatAreaShort(lawnSize) : '—'}<span class="unit">${lawnSize != null && lawnSize >= 1000 ? 'k m²' : 'm²'}</span></div></div>
         </div>
       </div>
     `;
