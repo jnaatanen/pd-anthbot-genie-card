@@ -10,9 +10,9 @@ Pause / Resume / Dock / Stop / per-zone-start controls.
 
 <table>
   <tr>
-    <td align="center"><img src="docs/preview.png" width="250" alt="Yard map, zones and controls"><br><sub>Yard map, zones &amp; controls</sub></td>
-    <td align="center"><img src="docs/preview2.png" width="250" alt="Mowing with active zones and coverage"><br><sub>Mowing — active zones &amp; coverage</sub></td>
-    <td align="center"><img src="docs/preview3.png" width="250" alt="Rain delay overlay"><br><sub>Rain delay overlay</sub></td>
+    <td align="center"><img src="docs/preview.png?v=2" width="250" alt="Yard map, zones and controls"><br><sub>Yard map, zones &amp; controls</sub></td>
+    <td align="center"><img src="docs/preview2.png?v=2" width="250" alt="Mowing with active zones and coverage"><br><sub>Mowing — active zones &amp; coverage</sub></td>
+    <td align="center"><img src="docs/preview3.png?v=2" width="250" alt="Rain delay overlay"><br><sub>Rain delay overlay</sub></td>
   </tr>
 </table>
 
