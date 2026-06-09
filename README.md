@@ -18,6 +18,15 @@ Pause / Resume / Dock / Stop / per-zone-start controls.
 
 <sub>Shown with the dark "glass" card-mod theme from the [Theming](#theming) section.</sub>
 
+> **Note:** Some of the functionality shown above — the live mower position,
+> the coverage trail, the real yard map, and correct RTK / coverage / error
+> values — relies on additions to the
+> [`anthbot_genie_ha`](https://github.com/vincentjanv/anthbot_genie_ha)
+> integration that currently live in the author's fork and may not be merged
+> upstream yet. The card works fine without them (it degrades gracefully) and
+> lights these up **automatically** once the integration exposes the data — see
+> the *Reserved slots* section below. No card changes are needed when that lands.
+
 > **Requires the [`anthbot_genie_ha`](https://github.com/vincentjanv/anthbot_genie_ha)
 > integration by [@vincentjanv](https://github.com/vincentjanv).** Install and
 > configure that first. This card only *visualizes* the entities that integration
