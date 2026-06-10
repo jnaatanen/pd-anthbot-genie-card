@@ -24,7 +24,7 @@
  *     `area` attribute).
  */
 
-const CARD_VERSION = '0.7.1';
+const CARD_VERSION = '0.7.2';
 
 // SPEC literal-id fallbacks (used when serial-scoped resolution finds nothing,
 // e.g. the §11 acceptance tests that mock `sensor.anthbot_genie_*`).
@@ -942,19 +942,21 @@ class AnthbotGenieCard extends HTMLElement {
           --ag-danger: var(--error-color, #d32f2f);
           --ag-blue: var(--info-color, #2f7fd3);
           /* Map palette — explicitly green, independent of the theme accent so
-             the yard reads as grass. Light background → medium zone greens →
-             darkest green for the active zone. All overridable via card-mod. */
+             the yard reads as grass. The accumulated yard map (real lawn shape)
+             is the base layer, so zone fills are VERY light and translucent by
+             default — they read as overlays without hiding the map underneath.
+             All overridable via card-mod. */
           --ag-map-bg: oklch(97% 0.02 150);
           --ag-zone-stroke: oklch(60% 0.08 150);
-          --ag-z1: oklch(88% 0.075 140);
-          --ag-z2: oklch(85% 0.075 162);
-          --ag-z3: oklch(86% 0.07 126);
-          --ag-z4: oklch(83% 0.08 176);
-          --ag-zone-active-fill: oklch(73% 0.13 150);
+          --ag-z1: oklch(93% 0.045 140 / 0.40);
+          --ag-z2: oklch(92% 0.045 162 / 0.40);
+          --ag-z3: oklch(93% 0.04 126 / 0.40);
+          --ag-z4: oklch(91% 0.045 176 / 0.40);
+          --ag-zone-active-fill: oklch(75% 0.12 150 / 0.28);
           --ag-zone-active-stroke: oklch(45% 0.13 150);
           --ag-zone-label-active: oklch(32% 0.09 150);
           --ag-trail: oklch(40% 0.12 150);
-          --ag-map-fill: oklch(84% 0.085 152);
+          --ag-map-fill: oklch(78% 0.10 151);
           --ag-mono: var(--ha-font-family-code, ui-monospace, 'SF Mono', Menlo, monospace);
           --ag-body: var(--ha-font-family-body, var(--mdc-typography-font-family, system-ui, sans-serif));
         }
